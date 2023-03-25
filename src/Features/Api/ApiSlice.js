@@ -5,7 +5,7 @@ export const apiSlice = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://localhost:9000'
     }),
-    tagTypes:["Videos"],
+    tagTypes:["Videos", "relatedVideo"],
     endpoints: (builder) => ({
         getVideos: builder.query({
             query: () => "/videos",
@@ -13,7 +13,9 @@ export const apiSlice = createApi({
             providesTags:["Videos"]
         }),
         getVideo: builder.query({
-            query: (videoId) => `/videos/${videoId}`
+            query: (videoId) => `/videos/${videoId}`,
+            providesTags: (result, error, arg)=>[{type:"Video", id:arg}]
+
         }),
         getRelatedVideos: builder.query({
             query: ({ id, title }) => {
@@ -21,7 +23,8 @@ export const apiSlice = createApi({
                 const likes = tags.map(tag => `title_like${tag}`);
                 const queryString = `/videos?${likes.join("&")}&id_ne=${id}&_limit=3`
                 return queryString;
-            }
+            },
+            providesTags: (result, error, arg)=>[{type:"relatedVideo", id:arg.id}]
         }),
         addVideo: builder.mutation({
             query: (data) => ({
@@ -37,7 +40,11 @@ export const apiSlice = createApi({
                 method: "PATCH",
                 body:data
             }),
-            invalidatesTags:["Videos"] 
+            invalidatesTags: (result, error, arg) => [
+                "Videos",
+                { type: "Video", id: arg.id },
+                {type:"relatedVideo", id:arg}
+            ]
         })
     })
 });
